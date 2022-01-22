@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+{% extends "base.html" %}
+{% load static %}
+{% load markdown_extras %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>Notatka</title>
+</head>
+<body>
+{% block content %}
+
+    <h5> <b> Autor : {{note.author}}  </b></h5>
+    <h5> <b> Data: {{note.date}} </b> </h5>
+    <h5> Tekst notatki: {{ note.text|markdown|safe }} </h5>
+
+    {% if form %}
+        <form method="post">
+            <table>
+                {% csrf_token %}
+                {{form}}
+            </table>
+            <input type="submit" class="btn btn-secondary" value="Podaj hasło">
+        </form>
+    {% else %}
+        {% if note %}
+            <br><a href="/../note/{{note.id}}/share"> Udostępnij notatkę </a> &nbsp
+        {% endif %}
+    {% endif %}
+{% endblock content %}
+</body>
+</html>

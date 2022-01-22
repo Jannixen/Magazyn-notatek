@@ -1,0 +1,33 @@
+<!doctype html>
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Magazyn notatek">
+
+   <!-- CSS only -->
+
+</head>
+<body>
+<div class="page-header">
+    <div>
+        <h1 style="font-size: 4vw">Magazyn notatek</h1>
+    </div>
+</div>
+
+    <div class="mt-2">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+{% block content %}
+{% endblock %}
+
+</body>
+</html>

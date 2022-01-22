@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+{% extends "base.html" %}
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>Main page</title>
+</head>
+<body>
+
+{% block content %}
+    <div class="row">
+    <div class="col-5 offset-1 mt-5">
+        <a href="{% url 'account_login' %}">
+        <button type="button" class="btn btn-secondary btn-block" enabled> Log in </button> </a>
+    </div>
+    <div class="col-5 mt-5 ">
+        <a href="{% url 'account_signup' %}">
+        <button type="button" class="btn btn-secondary btn-block" enabled> Sign in </button> </a>
+     </div>
+    </div>
+
+{% endblock content %}
+
+</body>
+</html>

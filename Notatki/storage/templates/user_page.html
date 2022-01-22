@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+{% extends "base.html" %}
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dodaj swoje notatki</title>
+</head>
+<body>
+
+{% block content %}
+    <div>
+      <div>
+            <br>
+            <h2> Użytkownik: </h2>
+            <br>
+            <h4> {{user}}</h4>
+            <br>
+            <a href="{% url "logout" %}" class="btn btn-secondary">Wyloguj się</a>
+           <a href="{% url 'password_change' %}" class="btn btn-secondary">Zmień hasło</a>
+        </div>
+        </div>
+
+    <div>
+    <div>
+        <a href="/../noteform">
+        <button type="button" class="btn btn-secondary btn-block" enabled> Dodaj notatkę </button> </a>
+    </div>
+    </div>
+
+        <div>
+        <div>
+            <h2>Twoje notatki</h2> <br>
+            <div>
+                <ul>
+                      {% for note in notes %}
+                        <li>
+                        <a href="/../note/{{note.id}}"> {{note.get_short}} </a> &nbsp
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        </div>
+
+{% endblock content %}
+
+</body>
+</html>
