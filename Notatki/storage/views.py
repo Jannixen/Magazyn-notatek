@@ -5,15 +5,13 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.shortcuts import render
 
 from storage.AESCipher import AESCipher
 from storage.forms import NoteForm, CustomUserCreationForm, ShareNoteForm, NotePasswordForm
 from storage.models import Note, EncryptedNote
-
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
-
 
 SALT_SIZE = int(128 / 8)
 
@@ -52,22 +50,26 @@ def add_note_page(request):
     if request.method == 'POST':
         form = NoteForm(request.POST)
         if form.is_valid():
-            if form.cleaned_data['if_encrypted'] and form.cleaned_data['if_public']:
-                messages.info(request, "Notatka może być albo publiczna albo szyfrowana")
-            elif form.cleaned_data['if_encrypted']:
-                password = form.cleaned_data['password']
-                try:
-                    validate_password(password, request.user)
-                    create_note_encrypted(request, form)
-                except ValidationError as e:
-                    form.add_error('password', e)
-                    return render(request, "note_add_page.html", {'form': form})
-            elif form.cleaned_data['if_public']:
-                create_note_public(request, form)
-            else:
-                create_note_private(request, form)
+            try:
+                process_note_add_form(request, form)
+            except ValidationError as e:
+                form.add_error('password', e)
+                return render(request, "note_add_page.html", {'form': form})
     form = NoteForm()
     return render(request, "note_add_page.html", {"form": form})
+
+
+def process_note_add_form(request, form):
+    if form.cleaned_data['if_encrypted'] and form.cleaned_data['if_public']:
+        messages.info(request, "Notatka może być albo publiczna albo szyfrowana")
+    elif form.cleaned_data['if_encrypted']:
+        password = form.cleaned_data['password']
+        validate_password(password, request.user)
+        create_note_encrypted(request, form)
+    elif form.cleaned_data['if_public']:
+        create_note_public(request, form)
+    else:
+        create_note_private(request, form)
 
 
 @login_required
@@ -78,16 +80,7 @@ def note_page(request, note_id):
         note = Note.objects.get(id=note_id)
     if note.can_view(request.user):
         if isinstance(note, EncryptedNote):
-            if request.method == 'POST':
-                form = NotePasswordForm(request.POST)
-                if form.is_valid():
-                    passwd = form.cleaned_data['password']
-                    if check_password_equivalence(passwd, note.password, note.salt):
-                        aes = AESCipher(note.aes_key)
-                        decrypted_text = aes.decrypt(note.text)
-                        messages.info(request, "Tekst notatki:" + decrypted_text)
-            else:
-                form = NotePasswordForm()
+            form = make_note_page_for_encrypted(request, note)
             context = {"note": note, "form": form}
         else:
             context = {"note": note}
@@ -95,6 +88,20 @@ def note_page(request, note_id):
         context = {}
         messages.info(request, "Nie masz uprawnień do wyświetlenia notatki")
     return render(request, "note_page.html", context)
+
+
+def make_note_page_for_encrypted(request, note):
+    if request.method == 'POST':
+        form = NotePasswordForm(request.POST)
+        if form.is_valid():
+            passwd = form.cleaned_data['password']
+            if check_password_equivalence(passwd, note.password, note.salt):
+                aes = AESCipher(note.aes_key)
+                decrypted_text = aes.decrypt(note.text)
+                messages.info(request, "Tekst notatki:" + decrypted_text)
+    else:
+        form = NotePasswordForm()
+    return form
 
 
 @login_required
@@ -147,11 +154,15 @@ def create_note_encrypted(request, form):
         messages.info(request, "Żeby zrobić zaszyfrowaną notatkę dodaj hasło")
     else:
         note.password = encrypt_password(form.cleaned_data['password'], note.salt)
-        if isinstance(request.user, User):
-            note.author = request.user
-            note.save()
-        else:
-            messages.info(request, "Nieprawidłowy użytkownik")
+        check_user(request, note)
+
+
+def check_user(request, note):
+    if isinstance(request.user, User):
+        note.author = request.user
+        note.save()
+    else:
+        messages.info(request, "Nieprawidłowy użytkownik")
 
 
 def generate_salt():
@@ -177,3 +188,4 @@ def share_note(form, note, request):
         if user_to_share:
             note.share_note(user_to_share)
             messages.info(request, "Notatka udostępniona.")
+
